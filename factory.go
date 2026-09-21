@@ -18,7 +18,7 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		BaseURL: "https://api.typesafe.ai", Model: "jev-latest", Mode: "annotate",
-		Timeout: 3 * time.Second, ScoreTTL: 15 * time.Minute, SlowSpanThreshold: time.Second,
+		MinInferenceInterval: 200 * time.Millisecond, Timeout: 3 * time.Second, ScoreTTL: 15 * time.Minute, SlowSpanThreshold: time.Second,
 		QueueSize: 256, Workers: 2, CacheSize: 10000, MaxStateBytes: 16384,
 		IncludeSpanName:   true,
 		ContextAttributes: []string{"service.name", "service.namespace", "deployment.environment.name"},

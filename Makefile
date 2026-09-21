@@ -28,6 +28,7 @@ collector:
 
 collector-validate:
 	JEV_API_KEY=validation-placeholder ./_build/otelcol-jevtraces validate --config examples/otelcol/config.yaml
+	JEV_API_KEY=validation-placeholder OTLP_BACKEND_ENDPOINT=localhost:4317 OTLP_BACKEND_AUTHORIZATION=validation-placeholder ./_build/otelcol-jevtraces validate --config examples/otelcol/config-production.yaml
 
 smoke:
 	python3 scripts/smoke-traces.py
@@ -37,3 +38,7 @@ run:
 
 clean:
 	rm -rf _build
+
+.PHONY: eval
+eval:
+	JEV_EVAL=1 go test -mod=readonly -run '^TestLiveInferenceEvaluation$$' -count=1 -v .

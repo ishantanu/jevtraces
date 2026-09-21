@@ -33,6 +33,7 @@ type tracesProcessor struct {
 	cache           *assessmentCache
 	pending         map[string]bool
 	jobs            chan scoreJob
+	nextRequest     time.Time
 	retryUntil      time.Time
 	failures        int
 	started, closed bool
@@ -213,13 +214,10 @@ func (p *tracesProcessor) worker(ctx context.Context) {
 			if ctx.Err() != nil {
 				return
 			}
-			p.mu.Lock()
-			cooling := p.now().Before(p.retryUntil)
-			if cooling {
+			if !p.waitForInference(ctx) {
+				p.mu.Lock()
 				delete(p.pending, job.key)
-			}
-			p.mu.Unlock()
-			if cooling {
+				p.mu.Unlock()
 				continue
 			}
 			p.telemetry.requests.Add(ctx, 1)
@@ -234,8 +232,11 @@ func (p *tracesProcessor) worker(ctx context.Context) {
 			}
 			if err == nil {
 				p.cache.put(job.key, value, p.now().Add(p.cfg.ScoreTTL))
-				p.failures = 0
-				p.retryUntil = time.Time{}
+				// An older successful request must not clear another worker's active cooldown.
+				if !p.now().Before(p.retryUntil) {
+					p.failures = 0
+					p.retryUntil = time.Time{}
+				}
 			} else {
 				p.failures = min(p.failures+1, 6)
 				p.retryUntil = p.now().Add(time.Second << (p.failures - 1))
@@ -245,6 +246,41 @@ func (p *tracesProcessor) worker(ctx context.Context) {
 				p.telemetry.failures.Add(ctx, 1)
 				p.logger.Warn("Jev operation assessment failed; spans remain retained", zap.Error(err))
 			}
+		}
+	}
+}
+
+// All workers share a no-burst request gate. Waiting never blocks span delivery.
+// Cooldown is checked again after waiting so another worker's failure takes effect.
+func (p *tracesProcessor) waitForInference(ctx context.Context) bool {
+	counted := false
+	for {
+		if ctx.Err() != nil {
+			return false
+		}
+		p.mu.Lock()
+		now := p.now()
+		if p.closed || now.Before(p.retryUntil) {
+			p.mu.Unlock()
+			return false
+		}
+		wait := p.nextRequest.Sub(now)
+		if wait <= 0 {
+			p.nextRequest = now.Add(p.cfg.MinInferenceInterval)
+			p.mu.Unlock()
+			return true
+		}
+		p.mu.Unlock()
+		if !counted {
+			p.telemetry.rateLimited.Add(ctx, 1)
+			counted = true
+		}
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return false
+		case <-timer.C:
 		}
 	}
 }

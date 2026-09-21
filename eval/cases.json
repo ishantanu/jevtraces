@@ -1,0 +1,12 @@
+[
+  {"id":"checkout","group":"checkout","name":"POST /checkout","service":"store","expected":[true,true,true]},
+  {"id":"checkout-reworded","group":"checkout","name":"Submit customer purchase","service":"store","expected":[true,true,true]},
+  {"id":"payment","name":"Capture payment","service":"payments","expected":[true,true,true]},
+  {"id":"login","name":"Authenticate user credentials","service":"identity","expected":[true,true,true]},
+  {"id":"inventory","name":"Reserve inventory for an order","service":"inventory","expected":[true,true,true]},
+  {"id":"health","group":"health","name":"GET /healthz (static liveness response)","service":"store","expected":[false,false,false]},
+  {"id":"health-reworded","group":"health","name":"Return constant process-alive response","service":"store","expected":[false,false,false]},
+  {"id":"favicon","name":"GET /favicon.ico (static cached icon)","service":"static-assets","expected":[false,false,false]},
+  {"id":"reconcile","name":"Reconcile payment ledger balances","service":"accounting","expected":[true,true,true]},
+  {"id":"unknown","name":"execute","service":"worker","expected":[null,null,null]}
+]

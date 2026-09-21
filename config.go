@@ -12,21 +12,22 @@ import (
 )
 
 type Config struct {
-	APIKey              configopaque.String `mapstructure:"api_key"`
-	BaseURL             string              `mapstructure:"base_url"`
-	Model               string              `mapstructure:"model"`
-	Mode                string              `mapstructure:"mode"`
-	Timeout             time.Duration       `mapstructure:"timeout"`
-	ScoreTTL            time.Duration       `mapstructure:"score_ttl"`
-	SlowSpanThreshold   time.Duration       `mapstructure:"slow_span_threshold"`
-	QueueSize           int                 `mapstructure:"queue_size"`
-	Workers             int                 `mapstructure:"workers"`
-	CacheSize           int                 `mapstructure:"cache_size"`
-	MaxStateBytes       int                 `mapstructure:"max_state_bytes"`
-	IncludeSpanName     bool                `mapstructure:"include_span_name"`
-	ContextAttributes   []string            `mapstructure:"context_attributes"`
-	SpanAttributes      []string            `mapstructure:"span_attributes"`
-	ProtectedOperations []string            `mapstructure:"protected_operations"`
+	APIKey               configopaque.String `mapstructure:"api_key"`
+	BaseURL              string              `mapstructure:"base_url"`
+	Model                string              `mapstructure:"model"`
+	Mode                 string              `mapstructure:"mode"`
+	MinInferenceInterval time.Duration       `mapstructure:"min_inference_interval"`
+	Timeout              time.Duration       `mapstructure:"timeout"`
+	ScoreTTL             time.Duration       `mapstructure:"score_ttl"`
+	SlowSpanThreshold    time.Duration       `mapstructure:"slow_span_threshold"`
+	QueueSize            int                 `mapstructure:"queue_size"`
+	Workers              int                 `mapstructure:"workers"`
+	CacheSize            int                 `mapstructure:"cache_size"`
+	MaxStateBytes        int                 `mapstructure:"max_state_bytes"`
+	IncludeSpanName      bool                `mapstructure:"include_span_name"`
+	ContextAttributes    []string            `mapstructure:"context_attributes"`
+	SpanAttributes       []string            `mapstructure:"span_attributes"`
+	ProtectedOperations  []string            `mapstructure:"protected_operations"`
 }
 
 func (c *Config) Validate() error {
@@ -42,6 +43,9 @@ func (c *Config) Validate() error {
 	}
 	if strings.ToLower(c.Mode) != "annotate" {
 		return fmt.Errorf("jevtraces only supports mode: annotate; whole-trace sampling is not implemented")
+	}
+	if c.MinInferenceInterval < time.Millisecond {
+		return fmt.Errorf("min_inference_interval must be at least 1ms")
 	}
 	if c.Timeout <= 0 || c.ScoreTTL < time.Millisecond || c.SlowSpanThreshold <= 0 {
 		return fmt.Errorf("timeout and slow_span_threshold must be positive; score_ttl must be at least 1ms")

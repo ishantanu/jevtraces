@@ -28,6 +28,7 @@ func (f transportFunc) RoundTrip(r *http.Request) (*http.Response, error) { retu
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.APIKey = "test-key"
+	cfg.MinInferenceInterval = time.Millisecond
 	return cfg
 }
 

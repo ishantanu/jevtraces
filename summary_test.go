@@ -135,6 +135,7 @@ func TestConfigValidation(t *testing.T) {
 		func(c *Config) { c.APIKey = "" }, func(c *Config) { c.BaseURL = "file:///tmp/secret" },
 		func(c *Config) { c.BaseURL = "https://user:secret@example.com" }, func(c *Config) { c.BaseURL = "https://example.com?secret=yes" },
 		func(c *Config) { c.Model = "" }, func(c *Config) { c.Mode = "reduce" },
+		func(c *Config) { c.MinInferenceInterval = 0 },
 		func(c *Config) { c.Timeout = 0 }, func(c *Config) { c.ScoreTTL = 0 }, func(c *Config) { c.SlowSpanThreshold = 0 },
 		func(c *Config) { c.QueueSize = 0 }, func(c *Config) { c.Workers = 0 }, func(c *Config) { c.CacheSize = 0 },
 		func(c *Config) { c.MaxStateBytes = 1 }, func(c *Config) { c.MaxStateBytes = 2 * 1024 * 1024 },

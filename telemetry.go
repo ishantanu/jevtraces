@@ -10,7 +10,7 @@ import (
 type telemetry struct {
 	processed, annotated, protected, skipped metric.Int64Counter
 	hits, misses, enqueued, rejected         metric.Int64Counter
-	requests, failures                       metric.Int64Counter
+	requests, failures, rateLimited          metric.Int64Counter
 	latency                                  metric.Float64Histogram
 }
 
@@ -32,6 +32,7 @@ func newTelemetry(provider metric.MeterProvider) (telemetry, error) {
 		{"cache.misses", "Spans without a fresh local operation assessment.", &t.misses},
 		{"queue.enqueued", "Operation assessment jobs accepted by the queue.", &t.enqueued},
 		{"queue.rejected", "New jobs rejected due to capacity, cooldown, or shutdown.", &t.rejected},
+		{"inference.rate_limited", "Assessment jobs delayed by the per-instance request rate limit.", &t.rateLimited},
 		{"inference.requests", "Jev assessment attempts started by workers.", &t.requests},
 		{"inference.failures", "Failed Jev assessments excluding shutdown cancellation.", &t.failures},
 	} {

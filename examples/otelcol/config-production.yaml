@@ -1,11 +1,13 @@
+# Pilot configuration: local application/agent input, TLS-protected backend export.
+# Queue is in memory, not durable across restarts. See docs/production.md.
 # Annotation only: all spans are forwarded. No Redis or trace-ID routing required.
 receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
+        endpoint: 127.0.0.1:4317
       http:
-        endpoint: 0.0.0.0:4318
+        endpoint: 127.0.0.1:4318
 
 processors:
   memory_limiter:
@@ -44,8 +46,21 @@ processors:
     timeout: 1s
 
 exporters:
-  debug:
-    verbosity: detailed
+  otlp:
+    endpoint: ${env:OTLP_BACKEND_ENDPOINT}
+    tls:
+      insecure: false
+    headers:
+      authorization: ${env:OTLP_BACKEND_AUTHORIZATION}
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
 
 service:
   telemetry:
@@ -55,15 +70,15 @@ service:
         - pull:
             exporter:
               prometheus:
-                host: 0.0.0.0
+                host: 127.0.0.1
                 port: 8888
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, jevtraces, batch]
-      exporters: [debug]
+      exporters: [otlp]
     # Accept metrics on the same OTLP receiver; no Jev metrics inference here.
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [otlp]

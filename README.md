@@ -138,6 +138,7 @@ processors:
     model: jev-latest
     mode: annotate
     timeout: 3s
+    min_inference_interval: 200ms
     score_ttl: 15m
     slow_span_threshold: 1s
     queue_size: 256
@@ -206,8 +207,13 @@ include the required tenant attribute in the allow-list after considering privac
 
 The bounded LRU cache expires assessments after `score_ttl`. Pending jobs contain
 only bounded state and a hash, not complete spans. Worker count bounds concurrent
-requests; it is not a requests-per-second or monetary budget. High-cardinality
+requests. `min_inference_interval` (default `200ms`, minimum `1ms`) spaces request
+admissions across all workers of one instance, without bursts. Workers wait while
+spans continue downstream. This is not a cluster-wide or monetary budget. High-cardinality
 operation names can still cause cache churn and frequent requests.
+
+See [production pilot guidance](docs/production.md) for deployment configuration,
+cluster budgeting, benchmark commands, and remaining release gates.
 
 ## Failures and multiple replicas
 
@@ -252,3 +258,10 @@ latency, cache reuse, and added telemetry volume. Mock tests establish software
 behavior, not model accuracy, rare-failure detection, or safe sampling thresholds.
 
 Apache-2.0; see [LICENSE](LICENSE).
+
+### Small inference evaluation
+
+See [eval/README.md](eval/README.md) for a 10-operation synthetic evaluation.
+With `JEV_API_KEY` exported, `make eval` runs 20 paid requests using the processor's
+actual questions and saves probabilities and agreement against provisional labels.
+This is an exploratory evaluation, not a production-quality certification.
