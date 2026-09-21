@@ -1,5 +1,10 @@
 # jevtraces
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jevtraces-flat-dark.png" />
+  <img src="docs/assets/jevtraces.png" alt="jevtraces logo" width="420" />
+</picture>
+
 **Jev inference over operation metadata, delivered as OpenTelemetry span annotations.**
 
 `jevtraces` is an alpha OTel trace processor. It asks Jev whether representative
