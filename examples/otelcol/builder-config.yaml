@@ -1,0 +1,26 @@
+dist:
+  module: github.com/ishantanu/jevtraces/custom-collector
+  name: otelcol-jevtraces
+  description: OpenTelemetry Collector with Jev operation assessments for traces
+  version: 0.1.0-dev
+  output_path: ./_build
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.161.0
+
+processors:
+  - gomod: github.com/ishantanu/jevtraces v0.0.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.161.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.161.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.161.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.161.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.67.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.67.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.67.0
+
+replaces:
+  - github.com/ishantanu/jevtraces => ..
