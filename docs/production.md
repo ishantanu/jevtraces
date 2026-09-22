@@ -1,7 +1,8 @@
 # Production pilot guidance
 
-Status remains alpha. Use annotation-only pilots; no inference-based dropping is
-implemented. Scores describe operation metadata, not whole traces or current
+Status remains alpha. Start with annotation-only pilots. The optional
+[adaptive experiment](adaptive-sampling.md) uses a separate tail-sampling pipeline
+and requires additional routing and buffering checks. Scores describe operation metadata, not whole traces or current
 service health. Validate usefulness against engineer-labeled operations before
 using annotations to guide retention decisions.
 
@@ -53,7 +54,7 @@ and failure telemetry. Pending does not guarantee an assessment is queued.
 
 ## Checks before broader rollout
 
-- Run `make check`, `make collector`, `make collector-validate`, and `make smoke`.
+- Run `make check`, `make collector`, `make collector-validate`, `make smoke`, and `make experiment`.
 - Validate the pilot config with test environment values using the built binary.
 - Run `go test -run '^$' -bench BenchmarkConsumeTraces -benchmem ./...`.
   This measures 100-span batches with repeated descriptors, warm/cold caches,

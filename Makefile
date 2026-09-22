@@ -27,6 +27,7 @@ collector:
 	./scripts/build-collector.sh
 
 collector-validate:
+	JEV_API_KEY=validation-placeholder ./_build/otelcol-jevtraces validate --config examples/otelcol/config-adaptive.yaml
 	JEV_API_KEY=validation-placeholder ./_build/otelcol-jevtraces validate --config examples/otelcol/config.yaml
 	JEV_API_KEY=validation-placeholder OTLP_BACKEND_ENDPOINT=localhost:4317 OTLP_BACKEND_AUTHORIZATION=validation-placeholder ./_build/otelcol-jevtraces validate --config examples/otelcol/config-production.yaml
 
@@ -42,3 +43,7 @@ clean:
 .PHONY: eval
 eval:
 	JEV_EVAL=1 go test -mod=readonly -run '^TestLiveInferenceEvaluation$$' -count=1 -v .
+
+.PHONY: experiment
+experiment:
+	python3 scripts/experiment-adaptive.py

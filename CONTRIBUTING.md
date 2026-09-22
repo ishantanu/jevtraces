@@ -2,7 +2,7 @@
 
 Use Go 1.26.0+, Bash, Make, and Python 3. Run `make check` for formatting,
 vet, and race tests. Run `make collector`, `make collector-validate`, and
-`make smoke` after Collector changes. Smoke tests use local synthetic OTLP and
+`make smoke`, and `make experiment` after Collector changes. Smoke tests use local synthetic OTLP and
 mock inference; no API credentials are needed.
 
 Keep Collector API versions and the Builder manifest compatible. Do not commit

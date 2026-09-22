@@ -10,10 +10,14 @@
 `jevtraces` is an alpha OTel trace processor. It asks Jev whether representative
 traces containing an operation are likely useful for diagnosis, business-critical,
 and worth retaining. It caches those judgments and annotates later matching spans.
-**Every span is retained, regardless of the returned probabilities.**
+**The jevtraces processor retains every span, regardless of the returned probabilities.**
 
-This first version assesses operation metadata, not a complete trace or a specific
-request's outcome. It does not buffer traces, change sampling flags, rewrite IDs,
+An opt-in [adaptive sampling experiment](docs/adaptive-sampling.md) now combines
+these annotations with OTel tail sampling in a separate configuration. It retains
+a full archive branch and samples the comparison branch.
+
+The jevtraces processor assesses operation metadata, not a complete trace or a specific
+request's outcome. The processor does not buffer traces, change sampling flags, rewrite IDs,
 sample spans, or perform whole-trace retention. A trace can contain spans with
 different assessments. Do not interpret a low operation score as permission to
 discard that span or its trace.
@@ -32,7 +36,7 @@ export JEV_API_KEY='your-key'
 The example accepts OTLP traces and metrics on ports 4317/4318. It exports
 annotated traces and unchanged metrics to the debug exporter through separate
 pipelines. Metrics do not trigger Jev inference. This standalone distribution includes the `jevtraces` processor, OTLP receiver,
-batch and memory-limiter processors, and debug/OTLP exporters. It has no dependency
+batch, memory-limiter, and tail-sampling processors, and debug/OTLP/OTLP-HTTP exporters. It has no dependency
 on the jevmetrics project.
 
 To validate the full pipeline without external credentials or inference:
@@ -48,14 +52,21 @@ For a local one-process test flow, send OTLP traces to the Collector on
 `http://localhost:4318` and use the debug exporter or your preferred backend exporter.
 Configure a backend for persistent storage when needed.
 
-To verify the complete pipeline without credentials or external inference:
+## Experimental adaptive trace sampling
 
-```bash
-python3 scripts/smoke-traces.py
+Run `make experiment` to test the bundled Jev-guided tail-sampling policy against
+synthetic traces and mock inference. For a live shadow pilot, export `JEV_API_KEY`
+and run:
+
+```sh
+./_build/otelcol-jevtraces --config examples/otelcol/config-adaptive.yaml
 ```
 
-The smoke test starts a temporary local Jev stub and Collector, sends OTLP traces,
-checks cached annotations, protected spans, and metric passthrough, and stops both processes.
+The sampled branch retains protected or uncertain traces and keeps a 10% baseline
+of traces whose received spans all have low operation scores. A full-input branch
+allows comparison. Both outputs use debug exporters in this example; configure
+backend exporters for durable storage. This remains experimental, with explicit
+[policy, clustering, and late-span limits](docs/adaptive-sampling.md).
 
 ## Prometheus: what Jev has processed
 
@@ -231,9 +242,10 @@ Cold replicas can show `pending` while others show `scored`, and independently
 obtained scores can differ. Jev consistency does not guarantee identical output.
 There is no cluster-wide API budget or shared-cache coordination in this version.
 
-Whole-trace sampling would require a separate design for trace-ID ownership,
-bounded buffering, late spans, eviction, and trace-level protection. Simply
-dropping low-scoring spans would produce incomplete traces and is not supported.
+For the optional adaptive pipeline, OTel tail sampling owns trace buffering and
+decisions. It requires trace-ID routing and has late-span, eviction, and restart
+limits described in [adaptive sampling](docs/adaptive-sampling.md). The jevtraces
+processor itself never drops individual low-scoring spans.
 
 ## Development and evaluation
 
@@ -246,7 +258,8 @@ this implementation does not publish a module release.
 `make check` runs formatting, vet, and race tests for this project. The trace suite covers API
 validation, metadata privacy, cache identity/expiry/eviction, queue deduplication
 and pressure, cancellation, cooldown recovery, protection, and payload preservation.
-CI also runs the compiled Collector smoke test with synthetic OTLP and mock Jev.
+CI also runs the compiled Collector smoke test and adaptive sampling experiment
+with synthetic OTLP and mock Jev.
 
 Internal telemetry uses `jevtraces.spans.*`, `jevtraces.cache.*`,
 `jevtraces.queue.*`, and `jevtraces.inference.*` counters, plus the

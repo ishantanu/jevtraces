@@ -39,3 +39,4 @@ jobs:
       - run: ./_build/otelcol-jevtraces components
       - run: make collector-validate
       - run: make smoke
+      - run: make experiment

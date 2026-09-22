@@ -1,0 +1,68 @@
+# Experimental shadow deployment: compare the sampled branch with the full archive.
+# The jevtraces processor remains annotation-only; tail_sampling performs dropping.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+  jevtraces:
+    api_key: ${env:JEV_API_KEY}
+    mode: annotate
+    min_inference_interval: 200ms
+    score_ttl: 15m
+    protected_operations: [POST /checkout]
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1000
+    decision_cache:
+      sampled_cache_size: 100000
+      non_sampled_cache_size: 100000
+    policies:
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: slow-traces
+        type: latency
+        latency:
+          threshold_ms: 1000
+      - name: protect-or-retain
+        type: ottl_condition
+        ottl_condition:
+          error_mode: propagate
+          span:
+            - 'span.attributes["jevtraces.assessment.state"] == nil'
+            - 'span.attributes["jevtraces.assessment.state"] != "scored"'
+            - 'span.attributes["jevtraces.operation.keep_probability"] == nil'
+            - 'span.attributes["jevtraces.operation.business_criticality"] == nil'
+            - 'span.attributes["jevtraces.operation.diagnostic_value"] == nil'
+            - 'span.attributes["jevtraces.operation.keep_probability"] >= 0.2'
+            - 'span.attributes["jevtraces.operation.business_criticality"] >= 0.2'
+            - 'span.attributes["jevtraces.operation.diagnostic_value"] >= 0.2'
+      - name: routine-baseline
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+          hash_salt: jevtraces-experiment-v1
+  batch:
+    timeout: 1s
+exporters:
+  debug/archive:
+    verbosity: detailed
+  debug/sampled:
+    verbosity: detailed
+service:
+  pipelines:
+    traces/archive:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug/archive]
+    traces/sampled:
+      receivers: [otlp]
+      processors: [memory_limiter, jevtraces, tail_sampling, batch]
+      exporters: [debug/sampled]
